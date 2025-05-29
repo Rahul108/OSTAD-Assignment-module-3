@@ -20,18 +20,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
       
       - name: Install dependencies
         run: npm install
-      
-      - name: Check Node.js environment
-        run: |
-          echo "which node: $(which node)"
-          echo "which npm: $(which npm)"
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-          echo "Runner working directory: $GITHUB_WORKSPACE"
       
       - name: Run tests and capture results
         run: |
@@ -65,14 +56,13 @@ jobs:
       - name: Display test results
         run: cat test-results/test-output.txt
       
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
       
-      - name: Check Node.js environment
-        run: |
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-          echo "Runner working directory: $GITHUB_WORKSPACE"
+      - name: Install dependencies
+        run: npm install
       
       - name: Install PM2 globally
         run: npm install -g pm2
