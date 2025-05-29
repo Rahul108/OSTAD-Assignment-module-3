@@ -61,8 +61,8 @@ jobs:
         with:
           node-version: 22
       
-      - name: Install dependencies
-        run: npm install
+      - name: Install dependencies for deployment, avoid installing dev dependencies which are required for testing only
+        run: npm install --omit=dev
       
       - name: Install PM2 globally
         run: npm install -g pm2
