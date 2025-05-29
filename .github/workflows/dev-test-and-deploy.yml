@@ -1,0 +1,96 @@
+name: Test and Deploy
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run tests and capture results
+        run: |
+          mkdir -p test-results
+          npm run check -- --reporter spec > test-results/test-output.txt
+          echo "Test execution completed" >> test-results/test-output.txt
+          echo "Test finished at $(date)" >> test-results/test-output.txt
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+
+  deploy:
+    name: Deploy Application
+    needs: test
+    runs-on: [self-hosted, nodejs]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Download test results
+        uses: actions/download-artifact@v3
+        with:
+          name: test-results
+          path: test-results
+      
+      - name: Display test results
+        run: cat test-results/test-output.txt
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check Node.js environment
+        run: |
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Runner working directory: $GITHUB_WORKSPACE"
+      
+      - name: Deploy application
+        run: |
+          # Stop any existing application process
+          if pm2 list | grep -q "node-express-app"; then
+            pm2 stop node-express-app || true
+            pm2 delete node-express-app || true
+          fi
+          
+          # Start the application with PM2
+          pm2 start src/server.js --name node-express-app
+          
+          echo "Application successfully deployed!"
+          
+          # Save PM2 configuration for persistence
+          pm2 save
+      
+      - name: Verify deployment
+        run: |
+          # Wait for the application to start
+          sleep 5
+          
+          # Check if the application is running
+          if curl -s http://localhost:3000/api | grep -q "Hello World"; then
+            echo "Deployment verified successfully!"
+          else
+            echo "Deployment verification failed!"
+            exit 1
+          fi
