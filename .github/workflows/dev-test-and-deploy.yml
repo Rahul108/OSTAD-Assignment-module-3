@@ -1,0 +1,97 @@
+name: Test and Deploy
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Application
+    runs-on: ostad-module-3-runner
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run tests and capture results
+        run: |
+          mkdir -p test-results/dev/
+          npm run check -- --reporter spec > test-results/dev/test-output.txt
+          echo "Test execution completed" >> test-results/dev/test-output.txt
+          echo "Test finished at $(date)" >> test-results/dev/test-output.txt
+      
+      - name: Upload test results for dev env
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-dev
+          path: test-results/dev/
+          retention-days: 7
+
+  deploy:
+    name: Deploy Application
+    needs: test
+    runs-on: ostad-module-3-runner
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-dev
+          path: test-results/dev/
+      
+      - name: Display test results
+        run: cat test-results/dev/test-output.txt
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      
+      - name: Install dependencies for deployment, avoid installing dev dependencies which are required for testing only
+        run: npm install --omit=dev
+      
+      - name: Install PM2 globally
+        run: npm install -g pm2
+      
+      - name: Deploy application
+        run: |
+          # Stop any existing application process
+          if pm2 list | grep -q "node-app"; then
+            pm2 stop node-app || true
+            pm2 delete node-app || true
+          fi
+          
+          # Start the application with PM2
+          pm2 start src/server.js --name node-app
+          
+          echo "Application successfully deployed!"
+          
+          # Save PM2 configuration for persistence
+          pm2 save
+      
+      - name: Verify deployment
+        run: |
+          # Wait for the application to start
+          sleep 5
+          
+          # Check if the application is running
+          if curl -s http://localhost:3000/api | grep -q "Hello World"; then
+            echo "Deployment verified successfully!"
+          else
+            echo "Deployment verification failed!"
+            exit 1
+          fi
