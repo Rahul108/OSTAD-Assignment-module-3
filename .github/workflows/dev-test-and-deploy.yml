@@ -27,9 +27,9 @@ jobs:
       - name: Run tests and capture results
         run: |
           mkdir -p test-results/dev/
-          npm run check -- --reporter spec > test-output.txt
-          echo "Test execution completed" >> test-output.txt
-          echo "Test finished at $(date)" >> test-output.txt
+          npm run check -- --reporter spec > test-results/dev/test-output.txt
+          echo "Test execution completed" >> test-results/dev/test-output.txt
+          echo "Test finished at $(date)" >> test-results/dev/test-output.txt
       
       - name: Upload test results for dev env
         uses: actions/upload-artifact@v4
