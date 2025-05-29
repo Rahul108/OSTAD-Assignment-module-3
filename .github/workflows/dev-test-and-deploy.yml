@@ -25,6 +25,14 @@ jobs:
       - name: Install dependencies
         run: npm install
       
+      - name: Check Node.js environment
+        run: |
+          echo "which node: $(which node)"
+          echo "which npm: $(which npm)"
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Runner working directory: $GITHUB_WORKSPACE"
+      
       - name: Run tests and capture results
         run: |
           mkdir -p test-results
