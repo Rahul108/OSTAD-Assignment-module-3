@@ -10,7 +10,7 @@ on:
 jobs:
   test:
     name: Test Application
-    runs-on: ubuntu-latest
+    runs-on: ostad-module-3-runner
     
     steps:
       - name: Checkout code
@@ -42,7 +42,7 @@ jobs:
   deploy:
     name: Deploy Application
     needs: test
-    runs-on: [self-hosted, nodejs]
+    runs-on: ostad-module-3-runner
     
     steps:
       - name: Checkout code
